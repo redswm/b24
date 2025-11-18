@@ -1,0 +1,128 @@
+//Лог
+function c (theText) {
+	console.log(theText);
+}
+
+
+//Мерцание
+function flashScreen(color = 'white', count = 1, duration = 200) {
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = color;
+    overlay.style.zIndex = '999999';
+    overlay.style.opacity = '0';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.transition = `opacity ${duration / 1000}s ease-out`;
+    document.body.appendChild(overlay);
+    function flash(current) {
+        if (current >= count) {
+            // Завершаем и убираем оверлей
+            setTimeout(() => {
+                document.body.removeChild(overlay);
+            }, duration);
+            return;
+        }
+        // Мигаем: включаем
+        overlay.style.opacity = '0.8';
+        setTimeout(() => {
+            // Выключаем
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                // Следующий цикл
+                flash(current + 1);
+            }, duration);
+        }, duration);
+    }
+    flash(0); // Запускаем с 0
+}
+
+
+
+
+//Открыть уведомления
+document.addEventListener('keydown', function(event) {
+	// Не работаем, если CTRL
+    if (event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+    }
+    
+    if (event.code === 'NumpadSubtract') {
+        event.preventDefault();
+        const notificationElement = document.querySelector('.--o-notification');
+        if (notificationElement) {
+            notificationElement.click();
+            flashScreen('green', 2, 200);
+        } else {
+        	flashScreen('red', 2, 200);
+        }
+    }
+});
+
+
+
+
+
+//Найти и скопировать первый EMAIL
+document.addEventListener('keydown', function(event) {
+    if (event.code === 'NumpadAdd') {
+        event.preventDefault(); // Отменяем стандартное поведение
+
+        const excludedEmail = 'khakildar@yandex.ru';
+        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+
+        let foundEmail = null;
+
+        // 1. Ищем email в тексте страницы
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+
+        let node;
+        while ((node = walker.nextNode())) {
+            let match;
+            while ((match = emailRegex.exec(node.textContent)) !== null) {
+                const email = match[0];
+                if (email !== excludedEmail) {
+                    foundEmail = email;
+                    break;
+                }
+                // Если нашли исключённый — продолжаем искать в этом же текстовом узле
+            }
+            if (foundEmail) break;
+        }
+
+        // 2. Если в тексте не нашли — ищем в ссылках mailto:
+        if (!foundEmail) {
+            const mailtoLinks = document.querySelectorAll('a[href^="mailto:"]');
+            for (let link of mailtoLinks) {
+                const email = link.href.replace(/^mailto:/, '').split('?')[0];
+                if (email !== excludedEmail) {
+                    foundEmail = email;
+                    break;
+                }
+            }
+        }
+
+        // 3. Копируем, если нашли подходящий email
+        if (foundEmail) {
+            navigator.clipboard.writeText(foundEmail)
+                .then(() => {
+                    console.log('Email скопирован:', foundEmail);
+                })
+                .catch(err => {
+                    console.error('Ошибка копирования:', err);
+                });
+                	flashScreen('green', 2, 100);
+        } else {
+            console.log('Подходящий email не найден на странице');
+            	flashScreen('red', 2, 100);
+        }
+    }
+});
